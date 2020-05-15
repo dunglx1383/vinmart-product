@@ -1,6 +1,8 @@
 import json
 import unicodecsv as csv
 import requests
+
+from mapping import csv_columns, prepare_csv_row
 from vinmart_parser import vinmart_product_from_dict
 
 
@@ -16,6 +18,12 @@ def read_category_list():
                 page += 1
                 if not has_more_product:
                     break
+
+
+def clean_name(name: str):
+    return name.replace('\"', '') \
+        .replace('-', '') \
+        .replace(',', '_')
 
 
 def do_hard_work(page: int, name: str, url: str):
@@ -43,15 +51,12 @@ def json_to_csv(name: str, json_data: requests.Response):
     with open('products\\' + name + '.csv', mode='ab') as product_file:
         product_writer = csv.writer(product_file, delimiter=',', quotechar='"',
                                     quoting=csv.QUOTE_NONNUMERIC, encoding='utf-8')
+        product_writer.writerow(csv_columns)
         for product in result.result.products:
             print(product.name)
-            product_writer.writerow([product.name, str(product.price.sell_price), str(product.color.name)])
-
-
-def clean_name(name: str):
-    return name.replace('\"', '') \
-        .replace('-', '') \
-        .replace(',', '_')
+            row = prepare_csv_row(product)
+            product_writer.writerow(row)
+    product_file.close()
 
 
 def main():
