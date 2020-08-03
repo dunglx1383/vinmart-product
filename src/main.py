@@ -13,8 +13,7 @@ def read_category_list():
             print(str(row[0]) + '. getting products in ' + row[1])
             page = 1
             while True:
-                file_name = str(row[0]) + '_' + clean_name(row[1])
-                has_more_product = do_hard_work(page, file_name, row[2])
+                has_more_product = do_hard_work(page, row[0], clean_name(row[1]), row[2])
                 page += 1
                 if not has_more_product:
                     break
@@ -26,14 +25,14 @@ def clean_name(name: str):
         .replace(',', '_')
 
 
-def do_hard_work(page: int, name: str, url: str):
+def do_hard_work(page: int, category: str, name: str, url: str):
     url = url.replace('&_page=1', '&_page=' + str(page))
     print('url: ' + url)
     data = get_json_by_url(url)
     doc = json.loads(data.text)
     if doc['code'] == 'SUCCESS':
         print(doc['extra']['totalItems'])
-        json_to_csv(name, data)
+        json_to_csv(category, name, data)
         return doc['extra']['page'] * doc['extra']['pageSize'] < doc['extra']['totalItems']
     else:
         return False
@@ -45,16 +44,16 @@ def get_json_by_url(url):
     return json_data
 
 
-def json_to_csv(name: str, json_data: requests.Response):
+def json_to_csv(category: str, name: str, json_data: requests.Response):
     result = vinmart_product_from_dict(json.loads(json_data.text))
     print(result.code)
     with open('products\\' + name + '.csv', mode='ab') as product_file:
-        product_writer = csv.writer(product_file, delimiter=',', quotechar='"',
+        product_writer = csv.writer(product_file, delimiter=';', quotechar='"',
                                     quoting=csv.QUOTE_NONNUMERIC, encoding='utf-8')
         product_writer.writerow(csv_columns)
         for product in result.result.products:
             print(product.name)
-            row = prepare_csv_row(product)
+            row = prepare_csv_row(category, product)
             product_writer.writerow(row)
     product_file.close()
 
